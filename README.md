@@ -157,7 +157,7 @@ Otomatik temizlik: En son 5 snapshot tutulur, eskileri silinir.
 |-------|----------|-------|
 | **Varsayilan uygulamalar** | UserChoice hash'leri SID'e bagli, Windows hash algoritmasi gizli | SID degisikligi sonrasi Ayarlar > Varsayilan Uygulamalar'dan tekrar ayarla |
 | **Chrome/Edge profilleri** | DPAPI sifreleme SID'e bagli, kaydedilmis parolalar kaybolur | Chrome Sync'i SID degisikliginden once etkinlestir |
-| **Active Directory** | Domain trust iliskisi kirilir. **Bu yazilim Active Directory ortaminda test edilmemistir.** | Onceden domain'den cik, sonra tekrar katil |
+| **Active Directory** | Domain trust iliskisi kirilir. **Destek mevcuttur ancak bu yazilim Active Directory ortaminda test edilmemistir.** | Onceden domain'den cik, sonra tekrar katil |
 | **BitLocker** | TPM registry degisikligini kurcalama olarak algilar | BitLocker'i SID degisikliginden once kapat |
 
 ## Proje Mimarisi (N-Tier)
@@ -362,7 +362,7 @@ EASYSID operates in two phases:
 |------------|-------------|------------|
 | **Default apps** | UserChoice hashes are SID-bound, Windows hash algorithm is proprietary | Re-set defaults in Settings > Default Apps after reboot |
 | **Chrome/Edge profiles** | DPAPI encryption is SID-bound, saved passwords are lost | Enable Chrome Sync before SID change |
-| **Active Directory** | Domain trust relationship breaks. **This software has not been tested in Active Directory environments.** | Leave domain first, rejoin after SID change |
+| **Active Directory** | Domain trust relationship breaks. **Support is available, but this software has not been tested in Active Directory environments.** | Leave domain first, rejoin after SID change |
 | **BitLocker** | TPM detects registry changes as tampering | Disable BitLocker before running EASYSID |
 
 ## Build
