@@ -1,0 +1,49 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+          dotnet-quality: 'preview'
+
+      - name: Publish
+        run: dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -o ./publish
+
+      - name: Generate version
+        id: version
+        shell: bash
+        run: |
+          DATE=$(date +%Y.%m.%d)
+          SHORT=$(git rev-parse --short HEAD)
+          echo "tag=v${DATE}-${SHORT}" >> $GITHUB_OUTPUT
+          echo "name=EASYSID ${DATE} (${SHORT})" >> $GITHUB_OUTPUT
+
+      - name: Delete existing release
+        shell: bash
+        run: gh release delete "${{ steps.version.outputs.tag }}" --yes || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Release
+        shell: bash
+        run: |
+          gh release create "${{ steps.version.outputs.tag }}" \
+            ./publish/EASYSID.exe \
+            --title "${{ steps.version.outputs.name }}" \
+            --notes "Auto-build from commit ${{ github.sha }}" \
+            --latest
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

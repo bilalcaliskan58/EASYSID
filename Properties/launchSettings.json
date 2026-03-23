@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "SidChanger": {
+      "commandName": "Project",
+      "commandLineArgs": ""
+    }
+  }
+}
