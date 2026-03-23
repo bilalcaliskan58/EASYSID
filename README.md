@@ -14,8 +14,8 @@ Windows makinelerde Security Identifier (SID) degistirme araci. Sysprep alternat
 - **Bilgisayar Adi Degistirme**: Yeni isim, mevcut isim veya rastgele (PC-XXXXXX)
 - **Makine Kimlik Yenileme**: MachineGuid, MachineId, WSUS ID, MSDTC CID, Device ID, DHCPv6 DUID
 - **Ikon Cache Temizleme**: SID degisikligi sonrasi ikon bozulmalari onlenir
-- **Kapsamli Backup/Restore**: SHA256 butunluk dogrulamali snapshot sistemi
-- **WinPE Offline Restore**: Offline Windows kurulumuna snapshot geri yukleme
+- **Kapsamli Backup/Restore**: SHA256 butunluk dogrulamali snapshot sistemi *(deneysel)*
+- **WinPE Offline Restore**: Offline Windows kurulumuna snapshot geri yukleme *(deneysel)*
 - **Active Directory Uyarisi**: Domain uyeligi algilanir ve islem engellenir
 - **BitLocker Algilama**: BitLocker aktifse islem engellenir
 - **Interaktif Mod**: Argumsiz calistirildiginda adim adim sihirbaz
@@ -157,7 +157,7 @@ Otomatik temizlik: En son 5 snapshot tutulur, eskileri silinir.
 |-------|----------|-------|
 | **Varsayilan uygulamalar** | UserChoice hash'leri SID'e bagli, Windows hash algoritmasi gizli | SID degisikligi sonrasi Ayarlar > Varsayilan Uygulamalar'dan tekrar ayarla |
 | **Chrome/Edge profilleri** | DPAPI sifreleme SID'e bagli, kaydedilmis parolalar kaybolur | Chrome Sync'i SID degisikliginden once etkinlestir |
-| **Active Directory** | Domain trust iliskisi kirilir | Onceden domain'den cik, sonra tekrar katil |
+| **Active Directory** | Domain trust iliskisi kirilir. **Bu yazilim Active Directory ortaminda test edilmemistir.** | Onceden domain'den cik, sonra tekrar katil |
 | **BitLocker** | TPM registry degisikligini kurcalama olarak algilar | BitLocker'i SID degisikliginden once kapat |
 
 ## Proje Mimarisi (N-Tier)
@@ -249,8 +249,8 @@ Download `EASYSID.exe` from the [Releases](https://github.com/bilalcaliskan58/EA
 - **Computer Name Change**: New name, current name or random (PC-XXXXXX)
 - **Machine Identity Renewal**: MachineGuid, MachineId, WSUS ID, MSDTC CID, Device ID, DHCPv6 DUID
 - **Icon Cache Cleanup**: Prevents icon corruption after SID change
-- **Comprehensive Backup/Restore**: SHA256 integrity verified snapshot system
-- **WinPE Offline Restore**: Restore snapshots to offline Windows installations
+- **Comprehensive Backup/Restore**: SHA256 integrity verified snapshot system *(experimental)*
+- **WinPE Offline Restore**: Restore snapshots to offline Windows installations *(experimental)*
 - **Active Directory Detection**: Domain membership detected, operation blocked
 - **BitLocker Detection**: Operation blocked if BitLocker is active
 - **Interactive Mode**: Step-by-step wizard when run without arguments
@@ -362,7 +362,7 @@ EASYSID operates in two phases:
 |------------|-------------|------------|
 | **Default apps** | UserChoice hashes are SID-bound, Windows hash algorithm is proprietary | Re-set defaults in Settings > Default Apps after reboot |
 | **Chrome/Edge profiles** | DPAPI encryption is SID-bound, saved passwords are lost | Enable Chrome Sync before SID change |
-| **Active Directory** | Domain trust relationship breaks | Leave domain first, rejoin after SID change |
+| **Active Directory** | Domain trust relationship breaks. **This software has not been tested in Active Directory environments.** | Leave domain first, rejoin after SID change |
 | **BitLocker** | TPM detects registry changes as tampering | Disable BitLocker before running EASYSID |
 
 ## Build
