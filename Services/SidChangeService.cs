@@ -142,9 +142,9 @@ internal static class SidChangeService
         // 5e. Clear stale LSA secrets tied to old machine SID
         LsaAccountService.ClearStaleLsaSecrets(oldSid);
 
-        // 6. Clean up AppxAllUserStore keys with old SID
+        // 6. Clean up AppxAllUserStore keys with old SID (and any stale SIDs from previous changes)
         Console.WriteLine("[*] Cleaning up AppxAllUserStore...");
-        AppxCleanupService.CleanupAppxAllUserStore();
+        AppxCleanupService.CleanupAppxAllUserStore(newSid);
 
         // 7. Restore WinLogon settings (autologon, DisableCAD, etc.  -  not the login notice)
         Console.WriteLine("[*] Restoring WinLogon settings...");

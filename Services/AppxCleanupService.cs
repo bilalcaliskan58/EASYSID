@@ -5,7 +5,13 @@ namespace EASYSID;
 
 internal static class AppxCleanupService
 {
-    internal static void CleanupAppxAllUserStore(string hiveRoot = null)
+    /// <summary>
+    /// Removes ALL old SID subkeys from AppxAllUserStore.
+    /// Only keeps the new SID subkey (if it exists) and non-SID keys.
+    /// Stale SID keys from previous changes cause icon flickering
+    /// because Windows tries to resolve package registrations for non-existent SIDs.
+    /// </summary>
+    internal static void CleanupAppxAllUserStore(string newSid = null)
     {
         string basePath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore";
         Console.WriteLine($"[*] CleanupAppxAllUserStore: scanning '{basePath}'...");
@@ -18,26 +24,24 @@ internal static class AppxCleanupService
             foreach (string subkeyName in appx.GetSubKeyNames())
             {
                 if (!subkeyName.StartsWith("S-1-5-21-", StringComparison.OrdinalIgnoreCase)) continue;
-                Console.WriteLine($"  Appx: SID subkey '{subkeyName}'");
+
+                // Keep the new SID subkey, delete all others (stale from previous SID changes)
+                if (newSid != null && subkeyName.Contains(newSid, StringComparison.OrdinalIgnoreCase))
+                {
+                    Console.WriteLine($"  Appx: keeping current SID subkey '{subkeyName}'");
+                    continue;
+                }
+
+                Console.WriteLine($"  Appx: deleting stale SID subkey '{subkeyName}'");
                 try
                 {
-                    using var sidKey = appx.OpenSubKey(subkeyName, true);
-                    if (sidKey == null) continue;
-                    foreach (string childName in sidKey.GetSubKeyNames())
-                    {
-                        if (childName.StartsWith("Microsoft.Windows.Search_", StringComparison.OrdinalIgnoreCase))
-                        {
-                            try
-                            {
-                                sidKey.DeleteSubKeyTree(childName, false);
-                                Console.WriteLine($"    Deleted '{childName}'.");
-                                deletedTotal++;
-                            }
-                            catch (Exception exDel) { Console.WriteLine($"    Delete '{childName}' failed: {exDel.Message}"); }
-                        }
-                    }
+                    appx.DeleteSubKeyTree(subkeyName, false);
+                    deletedTotal++;
                 }
-                catch (Exception exSid) { Console.WriteLine($"  Appx: opening '{subkeyName}' failed: {exSid.Message}"); }
+                catch (Exception exDel)
+                {
+                    Console.WriteLine($"    Delete '{subkeyName}' failed: {exDel.Message}");
+                }
             }
             Console.WriteLine($"  AppxAllUserStore cleanup: {deletedTotal} key(s) deleted.");
         }
