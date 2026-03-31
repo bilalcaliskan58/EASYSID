@@ -389,13 +389,15 @@ public static class EasySidApp
 
         Console.WriteLine("SID change completed successfully.");
 
-        // Self-delete: schedule just before reboot/shutdown
-        BackgroundTaskService.ScheduleSelfDelete();
-
         // 11. Schedule a cleanup task that runs at next boot to clear WinLogon
         // notices in case reboot fails and user has to force-shutdown.
         // This task just runs: EASYSID /CLEARNOTICE and deletes itself.
+        // IMPORTANT: Must be scheduled BEFORE self-delete so the exe still exists.
         ScheduleBootCleanup();
+
+        // Self-delete: schedule just before reboot/shutdown.
+        // Runs after a delay so cleanup task can copy/find the exe if needed.
+        BackgroundTaskService.ScheduleSelfDelete();
 
         // 12. Reboot or shutdown
         if (opts.Reboot || opts.Shutdown)
@@ -414,7 +416,8 @@ public static class EasySidApp
     // -----------------------------------------------------------------------
 
     /// <summary>
-    /// Creates a one-shot boot task that clears WinLogon notices and deletes itself.
+    /// Creates a one-shot boot task that clears WinLogon notices using reg.exe.
+    /// Does NOT depend on EASYSID.exe existing (it may be self-deleted).
     /// Safety net: if reboot fails and user force-shuts down, the next boot
     /// will still clean up the "SID Change in Progress" login screen message.
     /// </summary>
@@ -422,10 +425,16 @@ public static class EasySidApp
     {
         try
         {
-            string exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
-            if (string.IsNullOrEmpty(exePath)) return;
-
             const string taskName = "EASYSID_CLEANUP";
+
+            // Use cmd.exe + reg.exe to clear WinLogon notice directly in registry.
+            // This has zero dependency on EASYSID.exe which gets self-deleted.
+            string regCommands = string.Join(" & ",
+                @"reg delete ""HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System"" /v legalnoticecaption /f 2>nul",
+                @"reg delete ""HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System"" /v legalnoticetext /f 2>nul",
+                @"reg delete ""HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon"" /v legalnoticecaption /f 2>nul",
+                @"reg delete ""HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon"" /v legalnoticetext /f 2>nul",
+                $@"schtasks /Delete /TN ""{taskName}"" /F 2>nul");
 
             string xml = $@"<?xml version=""1.0"" encoding=""UTF-16""?>
 <Task version=""1.4"" xmlns=""http://schemas.microsoft.com/windows/2004/02/mit/task"">
@@ -450,8 +459,8 @@ public static class EasySidApp
   </Settings>
   <Actions Context=""Author"">
     <Exec>
-      <Command>""{exePath}""</Command>
-      <Arguments>/CLEARNOTICE</Arguments>
+      <Command>cmd.exe</Command>
+      <Arguments>/c {System.Security.SecurityElement.Escape(regCommands)}</Arguments>
     </Exec>
   </Actions>
 </Task>";
