@@ -14,6 +14,10 @@ public class Options
     /// <summary>New SID value (null = generate random)</summary>
     public string NewSid { get; set; }
 
+    /// <summary>True when the user explicitly specified a SID via /SID= or interactive input.
+    /// When false, random SID generation is deferred to Phase 2 so each imaged machine gets a unique SID.</summary>
+    public bool SidExplicitlySet { get; set; }
+
     /// <summary>Skip user confirmation prompt</summary>
     public bool Force { get; set; }
 

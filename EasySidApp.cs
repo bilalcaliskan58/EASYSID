@@ -180,9 +180,21 @@ public static class EasySidApp
         }
 
         // 7. Determine new SID
-        string newSid = opts.NameOnly ? currentSid : (opts.NewSid ?? SidOperations.GenerateRandomSid());
+        // If the user explicitly set a SID, use it now.
+        // If random (default), defer generation to Phase 2 so each imaged machine gets a unique SID.
+        string newSid;
+        if (opts.NameOnly)
+            newSid = currentSid;
+        else if (opts.SidExplicitlySet && !string.IsNullOrEmpty(opts.NewSid))
+            newSid = opts.NewSid;
+        else if (opts.IsBackgroundService)
+            newSid = SidOperations.GenerateRandomSid(); // Phase 2: generate now
+        else
+            newSid = null; // Phase 1: defer to Phase 2
+
         Console.ForegroundColor = ConsoleColor.Gray;
-        Console.WriteLine($"New SID:     {newSid}");
+        Console.WriteLine($"New SID:     {newSid ?? "(Random - will be generated at next boot)"}");
+
 
         Console.ForegroundColor = origColor;
         // 8. Determine new computer name
@@ -557,16 +569,19 @@ public static class EasySidApp
             opts.ComputerName = nameInput;
 
         // 3. SID
-        Console.Write("New SID (Enter=random): ");
+        Console.Write("New SID (Enter=random, unique per machine): ");
         string sidInput = Console.ReadLine()?.Trim();
         if (!string.IsNullOrEmpty(sidInput))
+        {
             opts.NewSid = sidInput;
+            opts.SidExplicitlySet = true;
+        }
 
-        // Resolve the new SID now so we can show it in summary
-        string newSid = string.IsNullOrEmpty(opts.NewSid)
-            ? SidOperations.GenerateRandomSid()
-            : opts.NewSid;
-        opts.NewSid = newSid;
+        // If user specified a SID, use it. Otherwise show "Random" — actual
+        // generation is deferred to Phase 2 so each imaged machine gets a unique SID.
+        string newSidDisplay = opts.SidExplicitlySet
+            ? opts.NewSid
+            : "(Random - unique per machine)";
 
         // Resolve the new computer name
         string newName = ComputerNameService.ResolveNewComputerName(opts.ComputerName, currentName);
@@ -607,7 +622,7 @@ public static class EasySidApp
         Console.ForegroundColor = ConsoleColor.Red;
         Console.WriteLine($"  Current SID:  {currentSid}");
         Console.ForegroundColor = ConsoleColor.Green;
-        Console.WriteLine($"  New SID:      {newSid}");
+        Console.WriteLine($"  New SID:      {newSidDisplay}");
         Console.ResetColor();
         Console.WriteLine("  " + new string('-', 60));
         Console.ForegroundColor = ConsoleColor.Red;
@@ -637,13 +652,14 @@ public static class EasySidApp
 
     /// <summary>
     /// Builds a command-line argument array from the current Options object.
-    /// This ensures Phase 2 receives the exact same values (especially NewSid)
-    /// that were shown to the user in Phase 1, instead of regenerating random ones.
+    /// Only passes /SID= when the user explicitly specified one.
+    /// When SID is random (default), Phase 2 generates its own unique SID
+    /// so each imaged machine gets a different SID.
     /// </summary>
     private static string[] BuildArgsFromOptions(Options opts)
     {
         var args = new System.Collections.Generic.List<string>();
-        if (!string.IsNullOrEmpty(opts.NewSid) && !opts.NameOnly)
+        if (opts.SidExplicitlySet && !string.IsNullOrEmpty(opts.NewSid) && !opts.NameOnly)
             args.Add($"/SID={opts.NewSid}");
         if (!string.IsNullOrEmpty(opts.ComputerName))
             args.Add($"/COMPNAME={opts.ComputerName}");
@@ -858,6 +874,7 @@ public static class EasySidApp
             if (upper.StartsWith("/SID="))
             {
                 opts.NewSid = arg.Substring("/SID=".Length);
+                opts.SidExplicitlySet = true;
                 continue;
             }
             if (upper.StartsWith("/OS="))
